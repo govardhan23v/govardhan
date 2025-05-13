@@ -1,0 +1,55 @@
+import pandas as pd
+import numpy as np
+from sklearn.model_selection import train_test_split
+
+# Load the dataset
+try:
+    df = pd.read_csv(
+        'your_timeseries_data.csv', 
+        parse_dates=['Date'], 
+        index_col='Date'
+    )
+    print("Dataset loaded successfully.")
+except FileNotFoundError:
+    print("Error: File not found. Please check the file path.")
+    exit()
+except Exception as e:
+    print(f"An error occurred while loading the dataset: {e}")
+    exit()
+
+# Data cleaning (if necessary)
+df.fillna(method='ffill', inplace=True)  # Forward-fill missing values
+if df.isnull().values.any():
+    print("Warning: Dataset still contains missing values.")
+
+# Feature Engineering: Creating lag features (shifted features)
+try:
+    df['lag_1'] = df['value'].shift(1)
+    df['lag_2'] = df['value'].shift(2)
+    print("Lag features created successfully.")
+except KeyError:
+    print("Error: Column 'value' not found in the dataset. Ensure the dataset has a 'value' column.")
+    exit()
+
+# Drop rows with NaN values introduced by lag features
+df = df.dropna()
+if df.empty:
+    print("Error: All rows were dropped after removing NaN values. Check your dataset.")
+    exit()
+
+# Split the dataset into training and test sets
+try:
+    train, test = train_test_split(df, test_size=0.2, shuffle=False)
+    X_train, y_train = train.drop(columns=['value']), train['value']
+    X_test, y_test = test.drop(columns=['value']), test['value']
+    print("Dataset split into training and test sets successfully.")
+except KeyError:
+    print("Error: Column 'value' not found during train-test split. Ensure it exists in the dataset.")
+    exit()
+except Exception as e:
+    print(f"An error occurred during train-test split: {e}")
+    exit()
+
+# Optional: Print dataset shapes for verification
+print(f"Training set shape: X_train={X_train.shape}, y_train={y_train.shape}")
+print(f"Test set shape: X_test={X_test.shape}, y_test={y_test.shape}")
